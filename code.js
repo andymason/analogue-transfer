@@ -1,5 +1,4 @@
 var canvas = document.querySelector('#canvas-output');
-console.log(canvas);
 var ctx = canvas.getContext('2d');
 var width = canvas.width;
 var height = canvas.height;
@@ -7,36 +6,53 @@ var height = canvas.height;
 //var audiofile = 'morse-12wpm.mp3';
 var audiofile = 'broadcast.mp3';
 var audioEl = document.createElement('audio');
-
+audioEl.setAttribute('loop', true);
 audioEl.setAttribute('src', audiofile);
-//audioEl.play();
 
-var AudioContext = window.AudioContext || window.webkitAudioContext;
-var audioContext = new AudioContext();
-var mediaSource = audioContext.createMediaElementSource(audioEl);
-var gainNode = audioContext.createGain();
-var analyser = audioContext.createAnalyser();
-var buffer;
+var seconds = 2;
+var actx = new AudioContext();
+var frameCount = actx.sampleRate * seconds;
+// 1 channel buffer, nSeconds long in frames at n sample rate
+var aBuffer = actx.createBuffer(1, frameCount, actx.sampleRate);
+var aMedia =actx.createMediaElementSource(audioEl);
+var aBufferSource = actx.createBufferSource();
+var aAnalyser = actx.createAnalyser();
+aAnalyser.fftSize = 2048;
+var binCount = aAnalyser.frequencyBinCount;
 
-analyser.fftSize = 2048;
-analyser.smoothingTimeConstant = 0;
-var binCount = analyser.frequencyBinCount;
 
-mediaSource.connect(analyser);
-analyser.connect(audioContext.destination);
 
-/*
-mediaSource.connect(gainNode);
-gainNode.connect(audioContext.destination);
+var data = aBuffer.getChannelData(0);
+// Create sample white noise
+for (var i = 0; i < data.length; i++) {
+    //data[i] = Math.random() * 2  - 1;
+    /*
+    if (i % 2048 === 0) {
+        for (var n = 0; n < ; n++) {
+            data[i + n] = 1;
+        }
+    } else {
+        //data[i] = -1;
+    }
+    */
+    data[i] = Math.cos(i/9);
+}
 
-// Set gain to half
-gainNode.gain.value = 0.5;
-*/
+aBufferSource.buffer = aBuffer;
+//aBufferSource.connect(aAnalyser);
 
-//audioEl.play();
+aMedia.connect(aAnalyser);
+aAnalyser.connect(actx.destination);
+aBufferSource.loop = true;
+
+
+//aBufferSource.start(0);
+audioEl.play();
+
 
 ctx.fillStyle = 'rgb(0,0,0)';
 
+// TODO: Optimise. Only put 1px column of data instead of entire canvas
 function drawFreq(freqData) {
   var imgData = ctx.getImageData(0, 0, width, height);
   for(var row = 0; row < height; row++) {
@@ -55,13 +71,12 @@ function drawFreq(freqData) {
 
 var count = 0;
 
-audioEl.play();
-console.log(binCount);
 function anim() {
-  buffer = new Uint8Array(binCount);
-  analyser.getByteFrequencyData(buffer);
+  var buffer = new Uint8Array(binCount);
+  aAnalyser.getByteFrequencyData(buffer);
   drawFreq(buffer);
   requestAnimationFrame(anim);
 }
 
 anim();
+
