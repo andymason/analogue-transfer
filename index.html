@@ -1,8 +1,21 @@
 <html>
-<head></head>
+<head>
+    <style>
+        #canvas-oscilliscope,
+        #canvas-freq {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+    </style>
+</head>
 <body>
 
   <canvas id="canvas-output" width="1024" height="1024"></canvas>
+  <canvas id="canvas-oscilliscope" width="1024" height="1024"></canvas>
+  <canvas id="canvas-freq" width="1024" height="1024"></canvas>
+
+  <script src="underscore-min.js"></script>
   <script src="code.js"></script>
 </body>
 <html>
