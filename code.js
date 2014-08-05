@@ -60,8 +60,9 @@ for (var i = 0; i < data.length; i++) {
 
 
 var processNode = actx.createScriptProcessor();
-processNode.onaudioprocess = function() {
+processNode.onaudioprocess = function(e) {
     anim();
+    return e;
 }
 
 aMedia.connect(aAnalyser);
@@ -198,7 +199,9 @@ function drawBoxes(data) {
             }
 
             if (gapLength == 10 || gapLength == 11) {
+                sentence+=decode(currentUnit);
                 sentence += ' ';
+                currentUnit = '';
             }
 
             gapLength = 0;
