@@ -1,1 +1,14 @@
 Morsecode from http://www.smrcc.org.uk/Morse/morse.htm
+
+
+## Decoding morse code
+1. short mark, dot or "dit" (·) — "dot duration" is one time unit long
+
+2.longer mark, dash or "dah" (–) — three time units long
+
+3. inter-element gap between the dots and dashes within a character — one dot duration or one unit long
+
+4. short gap (between letters) — three time units long
+
+5. medium gap (between words) — seven time units long[1]
+
