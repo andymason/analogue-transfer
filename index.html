@@ -1,19 +1,18 @@
 <html>
 <head>
     <style>
-        #canvas-oscilliscope,
-        #canvas-freq {
-            position: absolute;
-            top: 0;
-            left: 0;
+        #sample-video {
+            width: 300px;
         }
     </style>
 </head>
 <body>
+    
+    <video id="sample-video" src="us_army_practice.mp4" controls autobuffer preload="auto"></video>
 
-  <canvas id="canvas-output" width="1024" height="1024"></canvas>
-  <canvas id="canvas-oscilliscope" width="1024" height="1024"></canvas>
-  <canvas id="canvas-freq" width="1024" height="1024"></canvas>
+    <audio id="sample-audio" src="morse-12wpm.mp3" controls></audio>
+
+  <canvas id="canvas-out"></canvas>
 
   <script src="underscore-min.js"></script>
   <script src="code.js"></script>
