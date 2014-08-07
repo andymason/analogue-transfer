@@ -4,6 +4,11 @@
         #sample-video {
             width: 300px;
         }
+
+    #canvas-freq {
+        width: 300px;
+        height: 250px;
+    }
     </style>
 </head>
 <body>
@@ -13,8 +18,10 @@
     <audio id="sample-audio" src="morse-12wpm.mp3" controls></audio>
 
   <canvas id="canvas-out"></canvas>
+  <canvas id="canvas-freq"></canvas>
 
   <script src="underscore-min.js"></script>
+  <script src="chroma.min.js"></script>
   <script src="code.js"></script>
 </body>
 <html>

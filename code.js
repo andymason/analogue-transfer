@@ -1,5 +1,5 @@
-//var mediaEl = document.querySelector('#sample-video');
-var mediaEl = document.querySelector('#sample-audio');
+var mediaEl = document.querySelector('#sample-video');
+//var mediaEl = document.querySelector('#sample-audio');
 var canvas = document.querySelector('#canvas-out');
 var ctx = canvas.getContext('2d');
 var width = canvas.getBoundingClientRect().width;
@@ -23,7 +23,7 @@ var binCount = analyser.frequencyBinCount;
 
 // Configure audio processing node
 var processNode = audioctx.createScriptProcessor();
-processNode.onaudioprocess = anim;
+processNode.onaudioprocess = anim; 
 
 mediaSource.connect(analyser);
 analyser.connect(processNode);
@@ -133,12 +133,56 @@ function decode(input) {
 }
 
 
-function anim() {
+function anim(event) {
+  var input = event.inputBuffer.getChannelData(0);
+  var output = event.outputBuffer.getChannelData(0);
+  for (var i =0; i < output.length; i++) {
+    output[i] = input[i];
+  }
+
+
   var buffer = new Uint8Array(binCount);
   analyser.getByteFrequencyData(buffer);
   drawBoxes(buffer);
+  freqScreen.draw(buffer);
   detectBeeps(buffer);
 }
+
+
+
+var FreqScreen = function(canvasEl) {
+    this.el = canvasEl;
+    this.ctx = canvasEl.getContext('2d');
+    this.width = canvasEl.getBoundingClientRect().width;
+    this.height = canvasEl.getBoundingClientRect().height;
+    this.colourScale = chroma.scale([
+        'black',
+        'purple',
+        'blue',
+        'cyan',
+        'green',
+        'yellow',
+        'orange',
+        'red',
+    ]).domain([0, 255]);
+    this.counter = 0;
+};
+
+FreqScreen.prototype.draw = function(buffer) {
+    if (!buffer) { return; }
+
+    var grad = this.ctx.createLinearGradient(0,0, 1, this.height);
+    for (var i = 0; i < buffer.length; i++) {
+        var colour = this.colourScale(buffer[i]).hex();
+        grad.addColorStop(i/buffer.length, colour);
+    }
+    this.ctx.fillStyle = grad;
+    this.ctx.fillRect(this.counter,0, 1, this.height);
+    this.counter = (this.counter < this.width) ? this.counter + 1 : 0;
+};
+
+var freqScreen = new FreqScreen(document.querySelector('#canvas-freq'));
+freqScreen.draw();
 
 // Morse code look-up table
 var morse = [
