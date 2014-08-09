@@ -1,27 +1,31 @@
+<!DOCTYPE html>
 <html>
 <head>
+    <meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1, maximum-scale=1">
     <style>
         #sample-video {
             width: 300px;
         }
 
-    #canvas-freq {
-        width: 300px;
-        height: 250px;
+    #canvas-freq,
+    #canvas-out {
+        background: #000;
     }
     </style>
 </head>
 <body>
     
-    <video id="sample-video" src="us_army_practice.mp4" controls autobuffer preload="auto"></video>
+    <input type="range" id="q" step="1" min="0" max="100" />
+    <input type="range" id="freq" step="10" min="0" max="22000" />
 
+    <video id="sample-video" src="us_army_practice.webm" controls autobuffer preload="auto"></video>
     <audio id="sample-audio" src="morse-12wpm.mp3" controls></audio>
+    <canvas id="canvas-out" width="300" height="250"></canvas>
+    <canvas id="canvas-freq" width="300" height="250"></canvas>
 
-  <canvas id="canvas-out"></canvas>
-  <canvas id="canvas-freq"></canvas>
-
-  <script src="underscore-min.js"></script>
-  <script src="chroma.min.js"></script>
+    <script src="underscore-min.js"></script>
+    <script src="hammer.min.js"></script>
+    <script src="chroma.min.js"></script>
   <script src="code.js"></script>
 </body>
 <html>

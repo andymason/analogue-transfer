@@ -21,34 +21,34 @@ analyser.fftSize = 2048;
 analyser.smoothingTimeConstant = 0;
 var binCount = analyser.frequencyBinCount;
 
+// Filter
+var filterNode = audioctx.createBiquadFilter();
+filterNode.type = 'bandpass';
+filterNode.frequency.value = 0;
+filterNode.Q.value = 1000;
+
+var qInput = document.querySelector('#q');
+qInput.addEventListener('change', function(e) {
+    filterNode.Q.value = e.target.value;
+    console.log(e.target.value);
+});
+
+var freqInput = document.querySelector('#freq');
+freqInput.addEventListener('change', function(e) {
+    filterNode.frequency.value = e.target.value;
+});
+
 // Configure audio processing node
 var processNode = audioctx.createScriptProcessor();
 processNode.onaudioprocess = anim; 
 
-mediaSource.connect(analyser);
+mediaSource.connect(filterNode);
+filterNode.connect(analyser);
 analyser.connect(processNode);
 processNode.connect(audioctx.destination);
 
 
 var count = 0;
-
-// TODO: Optimise. Only put 1px column of data instead of entire canvas
-function drawFreq(freqData) {
-  var imgData = ctx.getImageData(0, 0, width, height);
-  for(var row = 0; row < height; row++) {
-      var index = (width * height * 4) -(row * (width * 4)) + (count * 4);
-      imgData.data[index] =  freqData[row];
-      imgData.data[index + 1] = freqData[row];
-      imgData.data[index + 2] = freqData[row];
-      imgData.data[index + 3] = 255 ; //freqData[row];
-  }
-  ctx.putImageData(imgData, 0, 0);
-  count += 1;
-  if (count >= width) {
-    count = 0;
-  }
-}
-
 var beepLength = 0;
 var gapLength = 0;
 var minBins = 1;
@@ -61,14 +61,23 @@ var beeps = [];
 var sentence = '';
 
 // Set fill style
-ctx.fillStyle = 'rgba(0, 0, 255, 0.5';
+ctx.fillStyle = 'rgba(0, 0, 255, 1';
+ctx.strokeStyle = '#0F0';
+var verticalRatio = height / 255;
+var horiztonalRatio = width / binCount;
 
 function drawBoxes(data) {
     ctx.clearRect(0, 0, width, height);
+    ctx.beginPath();
     for (var i = 0; i < data.length; i++) {
-        ctx.fillRect(i *10, 0,  10,  10+data[i]);
+        if (i === 0) {
+            ctx.moveTo(i, data[i] * verticalRatio);
+        } else {
+            ctx.lineTo(i * horiztonalRatio, data[i] * verticalRatio);
+        }
     }
-
+    ctx.stroke();
+    ctx.closePath();
 }
 
 
@@ -134,6 +143,10 @@ function decode(input) {
 
 
 function anim(event) {
+  if (mediaEl.paused === true) {
+    return;
+  }
+
   var input = event.inputBuffer.getChannelData(0);
   var output = event.outputBuffer.getChannelData(0);
   for (var i =0; i < output.length; i++) {
@@ -142,8 +155,9 @@ function anim(event) {
 
 
   var buffer = new Uint8Array(binCount);
-  analyser.getByteFrequencyData(buffer);
+  analyser.getByteTimeDomainData(buffer);
   drawBoxes(buffer);
+  analyser.getByteFrequencyData(buffer);
   freqScreen.draw(buffer);
   detectBeeps(buffer);
 }
@@ -154,7 +168,9 @@ var FreqScreen = function(canvasEl) {
     this.el = canvasEl;
     this.ctx = canvasEl.getContext('2d');
     this.width = canvasEl.getBoundingClientRect().width;
-    this.height = canvasEl.getBoundingClientRect().height;
+    this.height = canvasEl.getBoundingClientRect().height * verticalRatio;
+    this.pixelSampleRateRatio = this.height / (audioctx.sampleRate / 2);
+    this.imageData = this.ctx.getImageData(0, 0, this.width, this.height);
     this.colourScale = chroma.scale([
         'black',
         'purple',
@@ -166,10 +182,26 @@ var FreqScreen = function(canvasEl) {
         'red',
     ]).domain([0, 255]);
     this.counter = 0;
+    this.ui = new Hammer(canvasEl, {});
+
+    this.handleTap = function(ev) {
+        var pos = this.calcCenter(ev.center);
+        console.log(pos);
+    };
+
+    this.calcCenter = function(center) {
+        var bounds = this.el.getBoundingClientRect();
+        return { x: center.x - bounds.left, y: center.y - bounds.top };
+    };
+
+    this.ui.on('tap', this.handleTap.bind(this));
 };
+
 
 FreqScreen.prototype.draw = function(buffer) {
     if (!buffer) { return; }
+
+    this.ctx.putImageData(this.imageData, 0, 0);
 
     var grad = this.ctx.createLinearGradient(0,0, 1, this.height);
     for (var i = 0; i < buffer.length; i++) {
@@ -179,10 +211,18 @@ FreqScreen.prototype.draw = function(buffer) {
     this.ctx.fillStyle = grad;
     this.ctx.fillRect(this.counter,0, 1, this.height);
     this.counter = (this.counter < this.width) ? this.counter + 1 : 0;
+
+    this.imageData = this.ctx.getImageData(0, 0, this.width, this.height);
+
+    this.ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+    // Draw fiter
+    var filterY = this.pixelSampleRateRatio * filterNode.frequency.value; 
+    filterY = Math.round(filterY);
+    this.ctx.fillRect(0, filterY, this.width, 1); 
+
 };
 
 var freqScreen = new FreqScreen(document.querySelector('#canvas-freq'));
-freqScreen.draw();
 
 // Morse code look-up table
 var morse = [
