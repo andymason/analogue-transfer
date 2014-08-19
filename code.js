@@ -20,6 +20,7 @@ var analyser = audioctx.createAnalyser();
 analyser.fftSize = 2048;
 analyser.smoothingTimeConstant = 0;
 var binCount = analyser.frequencyBinCount;
+var sampleRate = audioctx.sampleRate;
 
 // Filter
 var filterNode = audioctx.createBiquadFilter();
@@ -170,7 +171,12 @@ var FreqScreen = function(canvasEl) {
     this.width = canvasEl.getBoundingClientRect().width;
     this.height = canvasEl.getBoundingClientRect().height * verticalRatio;
     this.pixelSampleRateRatio = this.height / (audioctx.sampleRate / 2);
+    this.freqRange = new ConvertRange([0, this.height], [0, sampleRate/2]);
     this.imageData = this.ctx.getImageData(0, 0, this.width, this.height);
+    this.qRange2Height = new ConvertRange([0.0001, 1000], [0, this.height]);
+    this.qRange = new ConvertRange([0, this.height/3], [10, 0.001]);
+    this.qHeight = this.qRange2Height(filterNode.Q.value);
+
     this.colourScale = chroma.scale([
         'black',
         'purple',
@@ -181,12 +187,21 @@ var FreqScreen = function(canvasEl) {
         'orange',
         'red',
     ]).domain([0, 255]);
+
     this.counter = 0;
     this.ui = new Hammer(canvasEl, {});
 
     this.handleTap = function(ev) {
         var pos = this.calcCenter(ev.center);
-        console.log(pos);
+        filterNode.frequency.value = this.freqRange(pos.y);
+    };
+
+    this.handlePan = function(ev) {
+        var deltaY = Math.abs(ev.deltaX);
+        deltaY = (deltaY > this.height/3) ? this.height/3 : deltaY;
+        this.qHeight = deltaY;
+        filterNode.Q.value = Math.abs(this.qRange(deltaY));
+        console.log(Math.abs(this.qRange(deltaY)));
     };
 
     this.calcCenter = function(center) {
@@ -195,6 +210,7 @@ var FreqScreen = function(canvasEl) {
     };
 
     this.ui.on('tap', this.handleTap.bind(this));
+    this.ui.on('pan', this.handlePan.bind(this));
 };
 
 
@@ -214,15 +230,29 @@ FreqScreen.prototype.draw = function(buffer) {
 
     this.imageData = this.ctx.getImageData(0, 0, this.width, this.height);
 
+    
+    // Draw band filter frequency line
     this.ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-    // Draw fiter
     var filterY = this.pixelSampleRateRatio * filterNode.frequency.value; 
     filterY = Math.round(filterY);
-    this.ctx.fillRect(0, filterY, this.width, 1); 
+    this.ctx.fillRect(0, filterY, this.width, 1);
 
+    // Draw band filter Q range
+    this.ctx.fillStyle = 'rgba(255, 255, 255, 0.22)';
+    this.ctx.fillRect(0, filterY - this.qHeight/2, this.width, this.qHeight);
 };
 
 var freqScreen = new FreqScreen(document.querySelector('#canvas-freq'));
+
+
+function ConvertRange(r1, r2) {
+    return function(val) {
+        var range1 = r1;
+        var range2 = r2;
+        return ( val - range1[ 0 ] ) * (range2[1] - range2[0] ) / ( range1[1] - range1[0] ) + range2[0];
+    };
+}
+
 
 // Morse code look-up table
 var morse = [
